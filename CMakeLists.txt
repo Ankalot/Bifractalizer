@@ -54,7 +54,7 @@ cpmaddpackage(
 include(cmake/CompilerWarnings.cmake)
 include(cmake/Util.cmake)
 
-include_directories("libs/eigen-3.4.0")
+include_directories("extern/eigen")
 
 # Adds all the targets configured in the "plugin" folder.
 add_subdirectory(plugin)

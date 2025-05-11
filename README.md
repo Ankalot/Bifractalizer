@@ -4,9 +4,9 @@
 ![image](https://github.com/user-attachments/assets/b36a45b7-91fd-4b40-98c6-3c124ebfa112)
 
 ## How to build:
-1) Install JUCE and some cpp compiler. 
-2) Download Eigen C++ library and place it in `/libs` folder.
-3) Run `build_first_time.bat`. For the next builds use `rebuild.bat`.
+1) Install JUCE, some cpp compiler and CMake. 
+2) Run `git clone --recursive https://github.com/Ankalot/Bifractalizer.git` to get source code.
+3) Run `build_first_time.bat`. For the next builds use `rebuild.bat`. You can also build a release version (`build_release.bat`).
 4) Now you have VST3 and Standalone versions. If you want other types, then change the settings in cmake.
   
 ## How to debug:
