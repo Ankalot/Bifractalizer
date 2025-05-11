@@ -29,32 +29,6 @@ juce_add_plugin(
   "Bifractalizer" # change this
 )
 
-# --- Copy Assets for VST3 (Windows) ---
-if(WIN32)
-    # Get the base output directory for VST3
-    set(VST3_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/Bifractalizer_artefacts/Debug/VST3/Bifractalizer.vst3/Contents/x86_64-win")
-    
-    add_custom_command(
-        TARGET Bifractalizer_VST3
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-            "${VST3_OUTPUT_DIR}/Assets"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${ASSETS_DIR}"
-            "${VST3_OUTPUT_DIR}/Assets"
-        COMMENT "Copying Assets to VST3 (x86_64-win)..."
-    )
-endif()
-
-# --- Copy Assets for Standalone ---
-add_custom_command(
-    TARGET Bifractalizer_Standalone
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${ASSETS_DIR}"
-        "$<TARGET_FILE_DIR:Bifractalizer_Standalone>/Assets"
-)
-
 # Sets the source files of the plugin project.
 set(SOURCE_FILES source/PluginEditor.cpp source/PluginProcessor.cpp source/bifractalizer.cpp)
 # Optional; includes header files in the project file tree in Visual Studio
@@ -82,3 +56,31 @@ set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_OPTIONS "${PROJEC
 
 # In Visual Studio this command provides a nice grouping of source files in "filters".
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+
+
+
+file(GLOB RESOURCE_FILES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/background.jpg"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/button.png"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/knob.png"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/knob_outer.png"
+)
+
+foreach(resource ${RESOURCE_FILES})
+    if(NOT EXISTS ${resource})
+        message(FATAL_ERROR "Resource file not found: ${resource}")
+    endif()
+endforeach()
+
+juce_add_binary_data(
+    BifractalizerAssets
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/background.jpg
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/button.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/knob.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/knob_outer.png
+    HEADER_NAME BinaryData.h
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE BifractalizerAssets)

@@ -1,12 +1,16 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "BinaryData.h"
 
 
 class TexturedButton : public juce::ImageButton {
 public:
-    TexturedButton(const juce::File& assetsDir, const std::string& imgPath) {
-        buttonImage = juce::ImageCache::getFromFile(assetsDir.getChildFile(imgPath));
+    TexturedButton() {
+        buttonImage = juce::ImageCache::getFromMemory(
+            BinaryData::button_png,          // Resource name (auto-generated)
+            BinaryData::button_pngSize       // Resource size
+        );
         
         jassert(!buttonImage.isNull());
 

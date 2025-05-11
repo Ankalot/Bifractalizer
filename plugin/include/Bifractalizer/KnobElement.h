@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "BinaryData.h"
 
 
 class KnobLabel : public juce::Label {
@@ -30,11 +31,15 @@ public:
 
 class KnobElement : public juce::LookAndFeel_V4 {
 public:
-    KnobElement(const juce::File& assetsDir,
-                const std::string& knobPath,
-                const std::string& knobBackgroundPath) {
-        knob = juce::ImageCache::getFromFile(assetsDir.getChildFile(knobPath));
-        knobBackground = juce::ImageCache::getFromFile(assetsDir.getChildFile(knobBackgroundPath));
+    KnobElement() {
+        knob = juce::ImageCache::getFromMemory(
+            BinaryData::knob_png,          // Resource name (auto-generated)
+            BinaryData::knob_pngSize       // Resource size
+        );
+        knobBackground = juce::ImageCache::getFromMemory(
+            BinaryData::knob_outer_png,          // Resource name (auto-generated)
+            BinaryData::knob_outer_pngSize       // Resource size
+        );
         
         jassert(!knob.isNull());
         jassert(!knobBackground.isNull());

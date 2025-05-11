@@ -22,7 +22,6 @@ private:
   JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AudioPluginAudioProcessorEditor)
 
   // -~-~-~-~-~-~-~-~-~-~- Textures -~-~-~-~-~-~-~-~-~-~-
-  juce::File assetsDir;
   juce::Image backgroundImage;
 
   // -~-~-~-~-~-~-~-~-~-~- Buttons -~-~-~-~-~-~-~-~-~-~-

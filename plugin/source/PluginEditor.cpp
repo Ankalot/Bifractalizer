@@ -3,37 +3,22 @@
 
 
 namespace audio_plugin {
-juce::File getAssetsDirectory() {
-
-  const juce::StringArray possibleAssetPaths = {
-    juce::File::getCurrentWorkingDirectory().getChildFile("Assets").getFullPathName(),               // Standalone
-    juce::File::getCurrentWorkingDirectory().getChildFile("../VST3/Bifractalizer.vst3/Contents/x86_64-win/Assets").getFullPathName(),   // VST3 (Windows)
-    juce::File::getSpecialLocation(juce::File::currentApplicationFile)
-          .getParentDirectory().getChildFile("Assets").getFullPathName()                             // macOS
-  };
-  for (const auto& path : possibleAssetPaths) {
-      juce::File assetFile(path);
-      if (assetFile.exists()) {
-          return assetFile;
-      }
-  }
-}
-
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor(
     AudioPluginAudioProcessor& p): AudioProcessorEditor(&p), processorRef(p),
-      assetsDir(getAssetsDirectory()),
       freqAttachment(new juce::AudioProcessorValueTreeState::SliderAttachment(
         processorRef.getAPVTS(), "frequency", freqSlider)),
       phaseAttachment(new juce::AudioProcessorValueTreeState::SliderAttachment(
         processorRef.getAPVTS(), "blockOffset", phaseSlider)),
-      modeButton(assetsDir, "button.png"),
+      modeButton(),
       modeAttachment(new juce::AudioProcessorValueTreeState::ButtonAttachment(
         processorRef.getAPVTS(), "mode", modeButton)),
       gainAttachment(new juce::AudioProcessorValueTreeState::SliderAttachment(
         processorRef.getAPVTS(), "gain", gainSlider)) {
 
-  backgroundImage = juce::ImageCache::getFromFile(assetsDir.getChildFile("background.jpg"));
-
+  backgroundImage = juce::ImageCache::getFromMemory(
+      BinaryData::background_jpg,          // Resource name (auto-generated)
+      BinaryData::background_jpgSize       // Resource size
+  );
   //circleEffect = std::make_unique<CircleEffectComponent>();
   //circleEffect->setBounds(getLocalBounds());
   //circleEffect->setAlwaysOnTop(true);
@@ -71,7 +56,7 @@ void AudioPluginAudioProcessorEditor::setupKnob(juce::Slider& slider, float min,
   slider.setColour(juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
   slider.setColour(juce::Slider::textBoxHighlightColourId, juce::Colours::black.withAlpha(0.3f));
   
-  knobElement = std::make_unique<KnobElement>(assetsDir, "knob.png", "knob_outer.png");
+  knobElement = std::make_unique<KnobElement>();
   knobElement->setRotationRange(-juce::MathConstants<float>::pi * 0.75f, 
                                   juce::MathConstants<float>::pi * 0.75f);
   slider.setLookAndFeel(knobElement.get());
