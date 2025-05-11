@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(AudioPluginTest)
+project(BifractalizerTest)
 
 # Signals to CMake that we want to run tests from this directory.
 enable_testing()
@@ -13,7 +13,7 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${GOOGLETEST_SOURCE_DIR}/googletest/include)
 
 # Thanks to the fact that we link against the gtest_main library, we don't have to write the main function ourselves.
-target_link_libraries(${PROJECT_NAME} PRIVATE AudioPlugin GTest::gtest_main)
+target_link_libraries(${PROJECT_NAME} PRIVATE Bifractalizer GTest::gtest_main)
 
 # Enables strict C++ warnings and treats warnings as errors.
 # This needs to be set up only for your projects, not 3rd party
