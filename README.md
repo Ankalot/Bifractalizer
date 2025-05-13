@@ -3,6 +3,15 @@
  
 ![image](https://github.com/user-attachments/assets/b36a45b7-91fd-4b40-98c6-3c124ebfa112)
 
+## Video example:
+
+
+
+https://github.com/user-attachments/assets/28e6bd55-8942-42ca-83df-090278376e3e
+
+
+
+
 ## How to build:
 1) Install JUCE, some cpp compiler and CMake. 
 2) Run `git clone --recursive https://github.com/Ankalot/Bifractalizer.git` to get source code.
