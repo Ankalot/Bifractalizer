@@ -41,6 +41,9 @@ public:
   void getStateInformation(juce::MemoryBlock& destData) override;
   void setStateInformation(const void* data, int sizeInBytes) override;
 
+  void setBypassed(bool new_bypass) {bypass = new_bypass;}
+  bool getBypassed() {return bypass;}
+
   juce::AudioProcessorValueTreeState& getAPVTS() { return apvts; }
 
 private:
@@ -48,6 +51,8 @@ private:
 
   juce::AudioProcessorValueTreeState apvts;
   juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
+
+  bool bypass = false;
 
   juce::AudioBuffer<float> inputBuffer, outputBuffer, 
     processInBuffer, processOutBuffer, prevBuffer;
