@@ -29,9 +29,9 @@ std::vector<float> linspace(float start, float end, int num, bool endpoint = fal
 
 
 // f(x) = \sum_{n = 0}^{max_terms}{0.5^n g(\{2^n x\})}
-void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(x) == size(g) = pow of 2
-                        const std::vector<float>& x,         // size(f) == size(x) == size(g) = pow of 2
-                        const juce::AudioBuffer<float>& g,   // size(f) == size(x) == size(g) = pow of 2
+void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(x) == size(g)
+                        const std::vector<float>& x,         // size(f) == size(x) == size(g)
+                        const juce::AudioBuffer<float>& g,   // size(f) == size(x) == size(g)
                         const std::vector<float>& two_pow_n, // size(two_pow_n) == max_terms
                         const std::vector<float>& weights,   // size(weights) == max_terms
                         int max_terms = 20                   /* Must be divisible by 4!*/) {
@@ -39,7 +39,6 @@ void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(
     const int numChannels = f.getNumChannels();
     const float inv_g_step = static_cast<float>(N);
     const float* x_data = x.data();
-    const int mod_mask = N - 1; // Power-of-2 fast modulo
 
     for (int ch = 0; ch < numChannels; ++ch) {
         const float* g_data = g.getReadPointer(ch);
@@ -55,10 +54,10 @@ void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(
                 const float arg2 = xi * two_pow_n[n+2];
                 const float arg3 = xi * two_pow_n[n+3];
 
-                const int idx0 = static_cast<int>((arg0 - std::floor(arg0)) * inv_g_step + 0.5f) & mod_mask;
-                const int idx1 = static_cast<int>((arg1 - std::floor(arg1)) * inv_g_step + 0.5f) & mod_mask;
-                const int idx2 = static_cast<int>((arg2 - std::floor(arg2)) * inv_g_step + 0.5f) & mod_mask;
-                const int idx3 = static_cast<int>((arg3 - std::floor(arg3)) * inv_g_step + 0.5f) & mod_mask;
+                const int idx0 = static_cast<int>((arg0 - std::floor(arg0)) * inv_g_step + 0.5f);
+                const int idx1 = static_cast<int>((arg1 - std::floor(arg1)) * inv_g_step + 0.5f);
+                const int idx2 = static_cast<int>((arg2 - std::floor(arg2)) * inv_g_step + 0.5f);
+                const int idx3 = static_cast<int>((arg3 - std::floor(arg3)) * inv_g_step + 0.5f);
 
                 sum += weights[n]   * g_data[idx0];
                 sum += weights[n+1] * g_data[idx1];
@@ -96,9 +95,9 @@ void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(
                 const float arg = xi * two_pow_n[n];
                 const float fractional = arg - std::floor(arg);
                 const int idx = static_cast<int>(fractional * inv_g_step + 0.5f);
-                const int safe_idx = idx < N ? idx : N - 1;
+                //const int safe_idx = idx < N ? idx : N - 1;
 
-                sum += weights[n] * g_data[safe_idx];
+                sum += weights[n] * g_data[idx];
             }
 
             f_data[i] = sum;

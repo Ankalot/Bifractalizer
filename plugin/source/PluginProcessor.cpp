@@ -135,59 +135,30 @@ int closestPowerOf2(int x) {
   }
 }
 
-void interpolateAudioBuffer(const juce::AudioBuffer<float>& inputBuffer,
-                            juce::AudioBuffer<float>& outputBuffer) {
-  const int inputLength = inputBuffer.getNumSamples();
-  const int outputLength = outputBuffer.getNumSamples();
-  const int numChannels = inputBuffer.getNumChannels();
-
-  if (inputLength == outputLength)  {
-    // No interpolation needed if sizes match
-    for (int ch = 0; ch < numChannels; ++ch)
-      outputBuffer.copyFrom(ch, 0, inputBuffer, ch, 0, inputLength);
-    return;
-  }
-
-  const float ratio = static_cast<float>(inputLength - 1) / static_cast<float>(outputLength - 1);
-
-  for (int ch = 0; ch < numChannels; ++ch) {
-    const float* inputData = inputBuffer.getReadPointer(ch);
-    float* outputData = outputBuffer.getWritePointer(ch);
-
-    for (int i = 0; i < outputLength; ++i) {
-      const float inputPos = i * ratio;
-      const int x0 = static_cast<int>(inputPos);
-      const int x1 = std::min(x0 + 1, inputLength - 1);
-      const float alpha = inputPos - x0;
-
-      outputData[i] = inputData[x0] + alpha * (inputData[x1] - inputData[x0]);
-    }
-  }
-}
-
 void AudioPluginAudioProcessor::updateBuffers(int hostBlockSize) {
   // I am not 100% sure that these are the minimal outBufPosWrite and outBufSize possible
   //    but they work and and empirically I couldn't find a better option 
   
-  int blockSizeVal = getBlockSize();
-  int outBufSize = static_cast<int>(std::ceil(static_cast<double>(hostBlockSize) / 
-                    blockSizeVal) + (hostBlockSize % blockSizeVal == 0 ? 0 : 1)) * blockSizeVal;
-
-  int numChannels = getTotalNumInputChannels();
-  inputBuffer.setSize(numChannels, blockSizeVal, true, true, true);
-  outputBuffer.setSize(numChannels, outBufSize, true, true, true);
-
   inBufPos = getBlockOffset();
   prevBlockOffset = inBufPos;
 
+  int blockSizeVal = getBlockSize();
+  int outBufSize = static_cast<int>(std::ceil(static_cast<double>(hostBlockSize) / 
+                    blockSizeVal) + (hostBlockSize % blockSizeVal == 0 ? 0 : 1)) * blockSizeVal + inBufPos;
+
+  int numChannels = getTotalNumInputChannels();
+  inputBuffer.setSize(numChannels, blockSizeVal, false, true, true);
+  outputBuffer.setSize(numChannels, outBufSize, false, true, true);
+
   outBufPosRead = 0;
-  if (hostBlockSize == outBufSize)
+  if (hostBlockSize % (outBufSize - inBufPos) == 0)
     outBufPosWrite = outBufPosRead;
   else
     outBufPosWrite = (outBufPosRead + blockSizeVal) % outBufSize;
 
   int prevProcessingN = processingN;
-  processingN = closestPowerOf2(blockSizeVal);
+  //processingN = closestPowerOf2(blockSizeVal); INTERPOLATION FORTH AND BACK = 💀 💀 💀
+  processingN = blockSizeVal;
   processInBuffer.setSize(numChannels, processingN);
   processOutBuffer.setSize(numChannels, processingN);
 
@@ -308,7 +279,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   int hostBlockSize = buffer.getNumSamples();
   int blockSizeVal = getBlockSize();
   int outBufSize = static_cast<int>(std::ceil(static_cast<double>(hostBlockSize) / 
-                    blockSizeVal) + (hostBlockSize % blockSizeVal == 0 ? 0 : 1)) * blockSizeVal;
+                    blockSizeVal) + (hostBlockSize % blockSizeVal == 0 ? 0 : 1)) * blockSizeVal + getBlockOffset();
   int blockOffset = getBlockOffset();
 
   int need2UpdateBuffersPrev = need2UpdateBuffers;
@@ -367,7 +338,6 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   const float targetGain = getGain();
   buffer.applyGainRamp(0, hostBlockSize, previousGain, targetGain);
   previousGain = targetGain;
-
   // ============================ AVOIDING CLICKS AFTER UPDATING BUFFERS ===========================
   if (buffers2Update != 0) {
     if (need2UpdateBuffers >= 1)
@@ -395,18 +365,27 @@ void AudioPluginAudioProcessor::processCustomBlock() {
   // ======================================================================================================
   // ========================================== AUDIO PROCESSING ==========================================
   // ======================================================================================================
-  interpolateAudioBuffer(inputBuffer, processInBuffer);
+  for (int ch = 0; ch < getNumInputChannels(); ++ch) {
+    processInBuffer.copyFrom(ch, 0, inputBuffer, ch, 0, processingN);
+  }
   
-  if (apvts.getRawParameterValue("mode")->load()==0) {
-    fractalize(xGrid, processInBuffer, processOutBuffer, two_pow_n, weights, max_terms);
+  if (bypass) {
+    for (int ch = 0; ch < getNumInputChannels(); ++ch)
+      processOutBuffer.copyFrom(ch, 0, processInBuffer, ch, 0, processingN);
   } else {
-    if (!actualDefrMatrix) {
-      prepareDefractalizer();
+    if (apvts.getRawParameterValue("mode")->load()==0) {
+      fractalize(xGrid, processInBuffer, processOutBuffer, two_pow_n, weights, max_terms);
+    } else {
+      if (!actualDefrMatrix) {
+        prepareDefractalizer();
+      }
+      defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
     }
-    defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
   }
 
-  interpolateAudioBuffer(processOutBuffer, inputBuffer);
+  for (int ch = 0; ch < getNumInputChannels(); ++ch) {
+    inputBuffer.copyFrom(ch, 0, processOutBuffer, ch, 0, processingN);
+  }
   // ======================================================================================================
   // ======================================================================================================
   // ======================================================================================================
