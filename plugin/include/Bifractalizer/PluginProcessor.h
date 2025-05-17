@@ -4,8 +4,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 
-//using FloatSolver = Eigen::SparseLU<Eigen::SparseMatrix<float>>;
-using FloatSolver = Eigen::BiCGSTAB<Eigen::SparseMatrix<float>>;
+using FloatSolver = Eigen::SparseLU<Eigen::SparseMatrix<float>>;
+//using FloatSolver = Eigen::BiCGSTAB<Eigen::SparseMatrix<float>>;
 
 
 namespace audio_plugin {
@@ -70,6 +70,8 @@ private:
   bool actualDefrMatrix = false; 
   Eigen::SparseMatrix<float> defrMatrix;
   FloatSolver defrSolver;
+  juce::ThreadPool threadPool;
+  std::atomic<bool> solverReady{true};
   void prepareDefractalizer();
   // -~-~-~-~-~-~-~-~-~-~-~-~-~--~-~-~-~-~-~-~-~-~-~-~-~-~--~-~-~-~-~-~-~-~-~-
 

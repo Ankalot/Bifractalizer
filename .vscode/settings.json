@@ -100,6 +100,7 @@
         "valarray": "cpp",
         "iterativelinearsolvers": "cpp",
         "sparse": "cpp",
-        "alignedvector3": "cpp"
+        "alignedvector3": "cpp",
+        "sparselu": "cpp"
     }
 }

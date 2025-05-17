@@ -147,8 +147,10 @@ void AudioPluginAudioProcessor::updateBuffers(int hostBlockSize) {
                     blockSizeVal) + (hostBlockSize % blockSizeVal == 0 ? 0 : 1)) * blockSizeVal + inBufPos;
 
   int numChannels = getTotalNumInputChannels();
-  inputBuffer.setSize(numChannels, blockSizeVal, false, true, true);
-  outputBuffer.setSize(numChannels, outBufSize, false, true, true);
+  inputBuffer.setSize(numChannels, blockSizeVal);
+  inputBuffer.clear();
+  outputBuffer.setSize(numChannels, outBufSize);
+  outputBuffer.clear();
 
   outBufPosRead = 0;
   if (hostBlockSize % (outBufSize - inBufPos) == 0)
@@ -191,6 +193,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   outBufPosRead = 0;    // for audio repeatability
   outputBuffer.clear(); // for audio repeatability
   prevBlockOffset = -1; // so inBufPos will be changed
+  processingN = -1;
   updateBuffers(samplesPerBlock);
 }
 
@@ -354,10 +357,15 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 void AudioPluginAudioProcessor::prepareDefractalizer() {
   findDefractalizerMatrix(defrMatrix, two_pow_n, weights, processingN, max_terms);
 
-  //defrSolver.analyzePattern(defrMatrix);
-  //defrSolver.factorize(defrMatrix);
-  defrSolver.setMaxIterations(50);
-  defrSolver.compute(defrMatrix);
+  solverReady.store(false);
+  threadPool.addJob([this] {
+    defrSolver.analyzePattern(defrMatrix);
+    defrSolver.factorize(defrMatrix);
+    solverReady.store(true);
+  });
+
+  //defrSolver.setMaxIterations(max_terms*2);
+  //defrSolver.compute(defrMatrix);
   actualDefrMatrix = true;
 }
 
@@ -376,10 +384,16 @@ void AudioPluginAudioProcessor::processCustomBlock() {
     if (apvts.getRawParameterValue("mode")->load()==0) {
       fractalize(xGrid, processInBuffer, processOutBuffer, two_pow_n, weights, max_terms);
     } else {
-      if (!actualDefrMatrix) {
+      if (!actualDefrMatrix && solverReady) {
         prepareDefractalizer();
       }
       defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
+        defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
+      } else {
+        for (int ch = 0; ch < getNumInputChannels(); ++ch) {
+          processOutBuffer.copyFrom(ch, 0, processInBuffer, ch, 0, processingN);
+        }
+      }
     }
   }
 
