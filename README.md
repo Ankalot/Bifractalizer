@@ -1,14 +1,12 @@
 # Bifractalizer
  An audio plugin that fractalizes and defractalizes sound 😺
  
-![image](https://github.com/user-attachments/assets/b36a45b7-91fd-4b40-98c6-3c124ebfa112)
+![image](https://github.com/user-attachments/assets/09ded8ea-2025-4ae5-bf8c-7d3ae2915b3c)
 
 ## Video example:
 
 
-
-https://github.com/user-attachments/assets/28e6bd55-8942-42ca-83df-090278376e3e
-
+https://github.com/user-attachments/assets/12cceba0-b25a-481d-9267-a654e313a95f
 
 
 
