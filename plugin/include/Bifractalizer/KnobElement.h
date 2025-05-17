@@ -31,7 +31,7 @@ public:
 
 class KnobElement : public juce::LookAndFeel_V4 {
 public:
-    KnobElement() {
+    KnobElement(int textDy = -14): textDy(textDy) {
         knob = juce::ImageCache::getFromMemory(
             BinaryData::knob_png,          // Resource name (auto-generated)
             BinaryData::knob_pngSize       // Resource size
@@ -82,7 +82,7 @@ public:
     juce::Slider::SliderLayout getSliderLayout(juce::Slider& slider) override {
         auto layout = LookAndFeel_V4::getSliderLayout(slider);
         if (slider.getTextBoxPosition() == juce::Slider::TextBoxBelow) {
-            layout.textBoxBounds.translate(0, -14);
+            layout.textBoxBounds.translate(0, textDy);
         }
         return layout;
     }
@@ -145,4 +145,5 @@ private:
     juce::Image knob;
     juce::Image knobBackground;
     float minAngle, maxAngle;
+    int textDy;
 };

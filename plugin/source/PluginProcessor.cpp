@@ -57,6 +57,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
       "dB",
       juce::AudioProcessorParameter::genericParameter
   ));
+
+  params.add(std::make_unique<juce::AudioParameterFloat>(
+      "alpha",
+      "Alpha",
+      juce::NormalisableRange<float>(0.0f, 0.90f, 0.01f),
+      0.5f
+  ));
+
+  params.add(std::make_unique<juce::AudioParameterInt>(
+      "beta",
+      "Beta",
+      2, 8, 2
+  ));
   
   return params;
 }
@@ -135,6 +148,28 @@ int closestPowerOf2(int x) {
   }
 }
 
+void AudioPluginAudioProcessor::updateCoeffs() {
+  const float alpha = static_cast<float>(*apvts.getRawParameterValue("alpha"));
+  const int beta = static_cast<int>(*apvts.getRawParameterValue("beta"));
+
+  if (beta != prevBeta) {
+    max_terms = static_cast<int>(ceil(log(1000001)/log(beta)));
+  }
+
+  prevAlpha = alpha;
+  prevBeta = beta;
+
+  beta_pow_n.resize(max_terms), weights.resize(max_terms);
+  beta_pow_n[0] = 1.0f;
+  weights[0] = 1.0f;
+  for (int n = 1; n < max_terms; ++n) {
+      beta_pow_n[n] = beta_pow_n[n-1] * beta;
+      weights[n] = weights[n-1] * alpha;
+  }
+
+  actualDefrMatrix = false;
+}
+
 void AudioPluginAudioProcessor::updateBuffers(int hostBlockSize) {
   // I am not 100% sure that these are the minimal outBufPosWrite and outBufSize possible
   //    but they work and and empirically I couldn't find a better option 
@@ -172,13 +207,6 @@ void AudioPluginAudioProcessor::updateBuffers(int hostBlockSize) {
   if (prevProcessingN != processingN) {
     // -~-~-~-~-~-~-~-~-~-~-~-~-~ for </de>fractalizer -~-~-~-~-~-~-~-~-~-~-~-~-
     xGrid = linspace(0, 1.0f, processingN, false);
-    two_pow_n.resize(max_terms), weights.resize(max_terms);
-    two_pow_n[0] = 1.0f;
-    weights[0] = 1.0f;
-    for (int n = 1; n < max_terms; ++n) {
-        two_pow_n[n] = two_pow_n[n-1] * 2.0f;
-        weights[n] = weights[n-1] * 0.5f;
-    }
     // -~-~-~-~-~-~-~-~-~-~-~-~-~- for defractalizer -~-~-~-~-~-~-~-~-~-~-~-~-~-
     actualDefrMatrix = false;
   }
@@ -194,6 +222,7 @@ void AudioPluginAudioProcessor::prepareToPlay(double sampleRate,
   outputBuffer.clear(); // for audio repeatability
   prevBlockOffset = -1; // so inBufPos will be changed
   processingN = -1;
+  updateCoeffs();
   updateBuffers(samplesPerBlock);
 }
 
@@ -276,6 +305,11 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                              juce::MidiBuffer& midiMessages) {
   juce::ignoreUnused(midiMessages);
 
+  if (prevAlpha != static_cast<float>(*apvts.getRawParameterValue("alpha")) ||
+      prevBeta != static_cast<int>(*apvts.getRawParameterValue("beta"))) {
+    updateCoeffs();
+  }
+
   juce::ScopedNoDenormals noDenormals;
   auto totalNumInputChannels = getTotalNumInputChannels();
 
@@ -355,7 +389,7 @@ void AudioPluginAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 void AudioPluginAudioProcessor::prepareDefractalizer() {
-  findDefractalizerMatrix(defrMatrix, two_pow_n, weights, processingN, max_terms);
+  findDefractalizerMatrix(defrMatrix, beta_pow_n, weights, processingN, max_terms);
 
   solverReady.store(false);
   threadPool.addJob([this] {
@@ -382,12 +416,12 @@ void AudioPluginAudioProcessor::processCustomBlock() {
       processOutBuffer.copyFrom(ch, 0, processInBuffer, ch, 0, processingN);
   } else {
     if (apvts.getRawParameterValue("mode")->load()==0) {
-      fractalize(xGrid, processInBuffer, processOutBuffer, two_pow_n, weights, max_terms);
+      fractalize(xGrid, processInBuffer, processOutBuffer, beta_pow_n, weights, max_terms);
     } else {
       if (!actualDefrMatrix && solverReady) {
         prepareDefractalizer();
       }
-      defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
+      if (solverReady) {
         defractalize(processInBuffer, processOutBuffer, defrMatrix, defrSolver);
       } else {
         for (int ch = 0; ch < getNumInputChannels(); ++ch) {

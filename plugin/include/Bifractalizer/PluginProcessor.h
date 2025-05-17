@@ -65,7 +65,10 @@ private:
 
   // -~-~-~-~-~-~-~-~-~-~-~-~-~ for </de>fractalizer -~-~-~-~-~-~-~-~-~-~-~-~-
   int processingN, max_terms = 20;
-  std::vector<float> xGrid, two_pow_n, weights;
+  std::vector<float> xGrid, beta_pow_n, weights;
+  float prevAlpha = 0.5f;
+  int prevBeta = 2;
+  void updateCoeffs();
   // -~-~-~-~-~-~-~-~-~-~-~-~-~- for defractalizer -~-~-~-~-~-~-~-~-~-~-~-~-~-
   bool actualDefrMatrix = false; 
   Eigen::SparseMatrix<float> defrMatrix;

@@ -26,20 +26,20 @@ private:
 
   // -~-~-~-~-~-~-~-~-~-~- Buttons -~-~-~-~-~-~-~-~-~-~-
   TexturedButton modeButton;
-  //std::unique_ptr<CircleEffectComponent> circleEffect; 
   std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> modeAttachment;
   juce::Label fractalizerLabel;
 
   // -~-~-~-~-~-~-~-~-~-~- Knobs -~-~-~-~-~-~-~-~-~-~-
-  juce::Slider freqSlider, phaseSlider, gainSlider;
-  juce::Label freqLabel, phaseLabel, gainLabel;
-  std::unique_ptr<KnobElement> freqKnobElement, phaseKnobElement, gainKnobElement;
+  juce::Slider freqSlider, phaseSlider, gainSlider, alphaSlider, betaSlider;
+  juce::Label freqLabel, phaseLabel, gainLabel, alphaLabel, betaLabel;
+  std::unique_ptr<KnobElement> freqKnobElement, phaseKnobElement, gainKnobElement,
+    alphaKnobElement, betaKnobElement;
   std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> freqAttachment, 
-    phaseAttachment, gainAttachment;
+    phaseAttachment, gainAttachment, alphaAttachment, betaAttachment;
 
   void setupKnob(juce::Slider& slider, float min, float max, float dval, int numDec,
     std::unique_ptr<KnobElement>& knobElement, juce::Label& label, const std::string& labelText,
-    const std::string& suffix = "");
+    const std::string& suffix = "", bool mini = false);
 
 
 };

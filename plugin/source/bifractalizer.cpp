@@ -28,11 +28,11 @@ std::vector<float> linspace(float start, float end, int num, bool endpoint = fal
 }
 
 
-// f(x) = \sum_{n = 0}^{max_terms}{0.5^n g(\{2^n x\})}
+// f(x) = \sum_{n = 0}^{max_terms}{\alpha^n g(\{\beta^n x\})}
 void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(x) == size(g)
                         const std::vector<float>& x,         // size(f) == size(x) == size(g)
                         const juce::AudioBuffer<float>& g,   // size(f) == size(x) == size(g)
-                        const std::vector<float>& two_pow_n, // size(two_pow_n) == max_terms
+                        const std::vector<float>& beta_pow_n,// size(beta_pow_n) == max_terms
                         const std::vector<float>& weights,   // size(weights) == max_terms
                         int max_terms = 20) {
     const int N = g.getNumSamples();
@@ -49,7 +49,7 @@ void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(
             float sum = 0.0f;
 
             for (int n = 0; n < max_terms; ++n) {
-                const float arg = xi * two_pow_n[n];
+                const float arg = xi * beta_pow_n[n];
                 const int idx = static_cast<int>((arg - std::floor(arg)) * inv_g_step + 0.5f);
                 const int safe_idx = idx < N ? idx : N - 1;
                 sum += weights[n] * g_data[safe_idx];
@@ -64,17 +64,17 @@ void compute_f_optimized(juce::AudioBuffer<float>& f,        // size(f) == size(
 void fractalize(const std::vector<float> &x_grid, 
                 const juce::AudioBuffer<float> &g, 
                 juce::AudioBuffer<float> &f,
-                const std::vector<float> &two_pow_n, 
+                const std::vector<float> &beta_pow_n, 
                 const std::vector<float> &weights,
                 int max_terms = 20) {
     f.clear();
 
-    compute_f_optimized(f, x_grid, g, two_pow_n, weights, max_terms);
+    compute_f_optimized(f, x_grid, g, beta_pow_n, weights, max_terms);
 }
 
 
 void findDefractalizerMatrix(Eigen::SparseMatrix<float>& A,
-                             const std::vector<float> &two_pow_n,
+                             const std::vector<float> &beta_pow_n,
                              const std::vector<float> &weights,
                              int N, int max_terms = 20) {
     A.resize(N, N);
@@ -85,7 +85,7 @@ void findDefractalizerMatrix(Eigen::SparseMatrix<float>& A,
     for (int i = 0; i < N; ++i) {
         const float x = i * dx;
         for (int n = 0; n < max_terms; ++n) {
-            const float arg = two_pow_n[n] * x;
+            const float arg = beta_pow_n[n] * x;
             const int j = static_cast<int>((arg - std::floor(arg)) * N + 0.5f) % N;
             
             A.coeffRef(i, j) += weights[n];
@@ -96,7 +96,7 @@ void findDefractalizerMatrix(Eigen::SparseMatrix<float>& A,
 }
 
 
-// f(x) = \sum_{n = 0}^{max_terms}{0.5^n g(\{2^n x\})}
+// f(x) = \sum_{n = 0}^{max_terms}{\alpha^n g(\{\beta^n x\})}
 // finding g(x) from f(x) by solving system of linear equations
 void defractalize(const juce::AudioBuffer<float> &f,
                   juce::AudioBuffer<float> &g,
